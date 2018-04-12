@@ -1,0 +1,212 @@
+<modification>
+    <id>Opencart Product History</id>
+    <version>2.4.0</version>
+    <vqmver>2.3.0</vqmver>
+    <author>Jason Clark</author>
+    
+    <file name="admin/controller/catalog/product.php">
+
+        <operation info="Load Model">
+            <search position="after">
+                <![CDATA[public function edit() {]]>
+            </search>
+            <add>
+                <![CDATA[
+                #step 1
+                $validated = false;
+## handle if enabled
+$mod_enabled = $this->config->get('product_history_status');
+]]>
+            </add>
+        </operation>
+
+        <operation info="Form Validation if History module is enabled">
+            <search  position="replace" index="2">
+                <![CDATA[if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm()) {]]>
+            </search>
+             <add>
+                <![CDATA[ #step 2
+                if($mod_enabled){
+
+	$this->load->model('extension/module/product_history');
+
+if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->model_extension_module_product_history->validateHistoryForm()) {
+
+$this->model_extension_module_product_history->addProductHistory($this->request->get['product_id'], $this->request->post);
+
+$validated = true;
+
+}
+
+}else{
+## handle if not enabled
+		if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateForm()) { ]]>
+            </add>
+        </operation>
+
+        <operation info="Custom Form Validator">
+            <search position="after">
+                <![CDATA[$this->model_catalog_product->editProduct($this->request->get['product_id'], $this->request->post);]]>
+            </search>
+            <add>
+                <![CDATA[  #step 3
+                $validated = true;
+        }}  if($validated === true){ ]]>
+            </add>
+        </operation>
+
+       
+        <operation info="Revision Handeler">
+            <search  position="replace">
+                <![CDATA[$product_info = $this->model_catalog_product->getProduct($this->request->get['product_id']);]]>
+            </search>
+            <add>
+                <![CDATA[ ## #step 4 product history
+                $mod_enabled = $this->config->get('product_history_status');
+
+        $data['revision_total'] = 0;
+        $data['revision_numbers'] = null;
+        $data['original_id'] = null;
+        $data['current_revision'] = null;
+        
+         if(isset($mod_enabled)){
+        $this->document->addStyle('view/stylesheet/product_history.css');
+		$this->load->language('extension/module/product_history');
+		$this->load->model('extension/module/product_history');
+
+		$data['heading_history'] = $this->language->get('heading_history');
+		$data['entry_revision'] = $this->language->get('entry_revision');
+		$data['text_select_revision'] = $this->language->get('text_select_revision');
+		$data['help_history'] = $this->language->get('help_history');
+		
+		$this->load->language('catalog/product');
+		$this->document->setTitle($this->language->get('heading_title'));
+
+		## get original id
+		$original_id = $this->model_extension_module_product_history->getOriginalId($this->request->get['product_id']);
+
+		if(!empty($original_id)){
+		$original_id = $original_id['original_id'];
+        }else{
+        $original_id = $this->request->get['product_id'];
+        }
+
+		$data['revision_total'] =  $this->model_extension_module_product_history->totalRevisions($original_id);
+
+if(empty($data['revision_total'])){
+$data['revision_total'] = 0;
+}
+
+		$data['revision_numbers'] =  $this->model_extension_module_product_history->getRevisions($original_id);
+		$data['revision_numbers'] = array_reverse($data['revision_numbers']);
+
+		$current_revision_info = $this->model_extension_module_product_history->currentRevision($original_id);
+
+		$data['original_id'] = $original_id;
+        $data['current_revision'] = null;
+
+        $product_info = $this->model_catalog_product->getProduct($this->request->get['product_id']);
+
+    if(!empty($current_revision_info)){
+    $data['current_revision'] = $current_revision_info['_id'];
+    }
+    }
+            ## product history ]]>
+            </add>
+        </operation>
+        <operation info="Url for Ajax Call">
+            <search position="before">
+                <![CDATA[$data['layouts'] = $this->model_design_layout->getLayouts();]]>
+            </search>
+            <add>
+                <![CDATA[ #step 5
+                $data['new_product_url'] = html_entity_decode($this->url->link('catalog/product/edit', 'user_token=' . $this->session->data['user_token'], false));
+ ]]>
+            </add>
+        </operation>
+    </file>
+
+    <file name="admin/model/catalog/product.php">
+        <operation info="">
+            <search  position="replace">
+                <![CDATA[$this->addProduct($data);]]>
+            </search>
+            <add>
+                <![CDATA[ return $this->addProduct($data); ]]>
+            </add>
+        </operation>
+        <operation info="">
+            <search position="before">
+                <![CDATA[if (isset($data['filter_status']) && $data['filter_status'] !== '') {]]>
+            </search>
+            <add>
+                <![CDATA[ ## Product History
+            $sql .= " AND p.status != 2";
+            ## Product History ]]>
+            </add>
+        </operation>
+        <operation info="">
+            <search position="after">
+                <![CDATA[$sql .= " WHERE pd.language_id = '" . (int)$this->config->get('config_language_id') . "'";]]>
+            </search>
+            <add>
+                <![CDATA[ ## Product History
+            $sql .= " AND p.status != 2";
+        ## Product History ]]>
+            </add>
+        </operation>
+    </file>
+
+    <file name="admin/model/catalog/url_alias.php">
+        <operation info="">
+            <search position="before">
+                <![CDATA[public function getUrlAlias($keyword) {]]>
+            </search>
+            <add>
+                <![CDATA[ public function deleteUrlAlias($keyword) {
+		$query = $this->db->query("Delete  FROM " . DB_PREFIX . "url_alias WHERE keyword = '" . $this->db->escape($keyword) . "'");
+
+		return $query->row;
+	} ]]>
+            </add>
+        </operation>
+    </file>
+    
+    <file name="admin/view/template/catalog/product_form.twig">
+        <operation info="">
+            <search position="before">
+                <![CDATA[<ul class="nav nav-tabs">]]>
+            </search>
+            <add>
+                <![CDATA[ <!--Product History -->
+          {% if revision_total > 0 %} 
+        <div id='product_history' class='well'>
+       <h3> {{ heading_history }} </h3>
+        <label for="input-product-history">{{ entry_revision }}</label>
+        <select id='product_revision'>
+          <option value = ''>{{ text_select_revision }} </option>
+          {% set i = 1 %}
+         
+          {% for r in revision_numbers %}
+          
+          {% if r._id == current_revision %} 
+          
+           <option value = "{{ r._id }}" selected = 'selected'>{{  i }} - {{ r.modified }} </option>
+
+          {% else %}
+          
+           <option value = "{{ r._id }}">{{ i }} - {{ r.modified }} </option>
+           {% endif %}
+           
+          {% set i = i + 1 %}
+          
+          {% endfor %}
+          {% endif %}
+        </select>
+        </div>
+        <!--Product History --> ]]>
+            </add>
+        </operation>
+    </file>
+
+</modification>
