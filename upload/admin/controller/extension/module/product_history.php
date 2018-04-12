@@ -24,6 +24,9 @@ class ControllerExtensionModuleProductHistory extends Controller {
 		$data['text_edit'] = $this->language->get('text_edit');
 		$data['text_enabled'] = $this->language->get('text_enabled');
 		$data['text_disabled'] = $this->language->get('text_disabled');
+		
+		$data['donation_description'] = $this->language->get('donation_description');
+		$data['heading_donation_description'] = $this->language->get('heading_donation_description');
 
 		$data['entry_status'] = $this->language->get('entry_status');
 
@@ -73,9 +76,9 @@ class ControllerExtensionModuleProductHistory extends Controller {
 	}
 
 	protected function validate() {
-		//if (!$this->user->hasPermission('modify', 'extension/module/product_history')) {
-			//$this->error['warning'] = $this->language->get('error_permission');
-		//}
+		if (!$this->user->hasPermission('modify', 'extension/module/product_history')) {
+			$this->error['warning'] = $this->language->get('error_permission');
+		}
 
 		return !$this->error;
 	}

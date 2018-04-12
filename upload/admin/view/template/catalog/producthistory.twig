@@ -24,8 +24,10 @@
         {% endif %}
         
     <div class="panel panel-default">
-      <div class="panel-heading">
-        <h3 class="panel-title"><i class="fa fa-pencil"></i> {{ text_edit }}</h3>
+     <div class="panel-heading">
+                <h3 class="panel-title"><i class="fa fa-pencil"></i> {{ heading_description }}</h3>
+                <div class="donation-info "><h4>{{ heading_donation_description }}
+                        <a href="https://paypal.me/mithereal" target="_blank"> {{ donation_description }}</a></h4></div>
       </div>
       <div class="panel-body">
         <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-product_history" class="form-horizontal">

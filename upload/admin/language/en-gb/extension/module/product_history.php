@@ -18,3 +18,6 @@ $_['text_module']          = 'Module';
 $_['button_save']          = 'Save';
 $_['button_cancel']          = 'Cancel';
 $_['error_warning']          = 'Warning';
+
+$_['donation_description'] = 'Donate to keep this extension alive';
+$_['heading_donation_description'] = 'Donate:';
